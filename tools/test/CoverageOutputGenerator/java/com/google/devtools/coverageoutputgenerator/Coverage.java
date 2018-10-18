@@ -74,10 +74,13 @@ class Coverage {
     return finalCoverage;
   }
 
+  /**
+   * Replaces the source file names in the current coverage with their mapping in the given
+   * map, if it exists.
+   */
   void maybeReplaceSourcefileNames(ImmutableMap<String, String> reportedToOriginalSources) {
     if (reportedToOriginalSources == null) {
-      throw new IllegalArgumentException(
-          "reportedToOriginalSources should not be null.");
+      throw new IllegalArgumentException("reportedToOriginalSources should not be null.");
     }
     if (reportedToOriginalSources.isEmpty()) {
       // nothing to replace

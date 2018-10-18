@@ -167,7 +167,7 @@ public final class PyCommon {
                 semantics.getCoverageInstrumentationSpec(),
                 METADATA_COLLECTOR,
                 filesToBuild,
-                ImmutableMap.of()))
+                /*reportedToActualSources=*/ ImmutableMap.of()))
         .addSkylarkTransitiveInfo(
             PYTHON_SKYLARK_PROVIDER_NAME,
             createSourceProvider(this.transitivePythonSources, usesSharedLibraries()))

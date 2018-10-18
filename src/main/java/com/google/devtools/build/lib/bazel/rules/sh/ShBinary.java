@@ -100,7 +100,7 @@ public class ShBinary implements RuleConfiguredTargetFactory {
                 new InstrumentationSpec(FileTypeSet.NO_FILE),
                 InstrumentedFilesCollector.NO_METADATA_COLLECTOR,
                 filesToBuild,
-                ImmutableMap.of()))
+                /*reportedToActualSources=*/ ImmutableMap.of()))
         .build();
   }
 
