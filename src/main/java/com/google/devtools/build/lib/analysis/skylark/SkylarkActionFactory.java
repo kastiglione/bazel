@@ -18,6 +18,7 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.devtools.build.lib.actions.AbstractAction;
 import com.google.devtools.build.lib.actions.Action;
 import com.google.devtools.build.lib.actions.ActionAnalysisMetadata;
 import com.google.devtools.build.lib.actions.ActionLookupValue;
@@ -25,7 +26,10 @@ import com.google.devtools.build.lib.actions.ActionRegistry;
 import com.google.devtools.build.lib.actions.Artifact;
 import com.google.devtools.build.lib.actions.ArtifactRoot;
 import com.google.devtools.build.lib.actions.CommandLine;
+import com.google.devtools.build.lib.actions.ExecutionRequirements;
+import com.google.devtools.build.lib.actions.ExecutionRequirements.ParseableRequirement.ValidationException;
 import com.google.devtools.build.lib.actions.ParamFileInfo;
+import com.google.devtools.build.lib.actions.ResourceSet;
 import com.google.devtools.build.lib.actions.RunfilesSupplier;
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
 import com.google.devtools.build.lib.actions.extra.SpawnInfo;
@@ -622,6 +626,37 @@ public class SkylarkActionFactory implements SkylarkActionFactoryApi {
             ruleContext.getRule(),
             starlarkSemantics.experimentalAllowTagsPropagation());
     builder.setExecutionInfo(executionInfo);
+
+    // Actions can override their CPU reservation with a "cpus:<n>" tag.
+    String cpus = null;
+    for (String tag : executionInfo.keySet()) {
+      try {
+        String parsedCpus = ExecutionRequirements.CPU.parseIfMatches(tag);
+        if (parsedCpus != null) {
+          if (cpus != null) {
+            throw new EvalException(
+                String.format(
+                    "%s has more than one '%s' tag, but duplicate tags aren't allowed",
+                    ruleContext.getLabel(),
+                    ExecutionRequirements.CPU.userFriendlyName()));
+          }
+          cpus = parsedCpus;
+        }
+      } catch (ValidationException e) {
+        throw new EvalException(
+            String.format(
+                "%s has a '%s' tag, but its value '%s' didn't pass validation: %s",
+                ruleContext.getLabel(),
+                ExecutionRequirements.CPU.userFriendlyName(),
+                e.getTagValue(),
+                e.getMessage()));
+      }
+    }
+    if (cpus != null) {
+      builder.setResources(ResourceSet.createWithRamCpu(
+          AbstractAction.DEFAULT_RESOURCE_SET.getMemoryMb(),
+          Float.parseFloat(cpus)));
+    }
 
     if (inputManifestsUnchecked != Starlark.NONE) {
       for (RunfilesSupplier supplier :
